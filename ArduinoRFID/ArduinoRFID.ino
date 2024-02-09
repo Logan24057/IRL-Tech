@@ -57,6 +57,7 @@ void loop() {
 
       message.addTextRecord(writeString);
       message.addTextRecord(writeString);
+      message.addEmptyRecord();
 
       boolean success = nfc.write(message);
       if (success) {
