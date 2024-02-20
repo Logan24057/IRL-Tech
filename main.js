@@ -8,11 +8,11 @@ SerialPort.list()
     });
 
     // Create a new SerialPort instance
-    const port = new SerialPort('COM4', {
+    const port = new SerialPort({
+      path: 'COM4',
       baudRate: 115200,
       autoOpen: true,
     });
-
     // Writing to the port
     port.write('1', (err) => {
       if (err) {
