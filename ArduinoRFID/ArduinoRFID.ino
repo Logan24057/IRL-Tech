@@ -38,6 +38,7 @@ void loop() {
     if (inputString.equals("read")) {  // Compare the received string with "read"
       readNFC();                       // Do something if the received string is "read"
       Serial.print(count);
+      message.getRecord(0);
     }
     else if (inputString.equals("erase")){
       nfc.erase();
