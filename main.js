@@ -1,5 +1,10 @@
-const { SerialPort } = require('serialport');
+// Description: This file is used to read and write data to the serial port.
 
+const { SerialPort } = require('serialport'); // Import the serialport module
+
+const { Readline } = require('@serialport/parser-readline'); // Import the parser module
+
+// List all available ports
 SerialPort.list()
   .then((ports) => {
     ports.forEach((port) => {
@@ -13,6 +18,20 @@ SerialPort.list()
       baudRate: 115200,
       autoOpen: true,
     });
+
+    // Create a new parser instance
+    const parser = port.pipe(new Readline({ delimiter: '\n' }));
+
+    // Read the port data
+    port.on("open", () => {
+      console.log('serial port open');
+    });
+
+    // Log the data
+    parser.on('data', data => {
+      console.log('got word from arduino:', data);
+    });
+
     // Writing to the port
     port.write('1', (err) => {
       if (err) {
