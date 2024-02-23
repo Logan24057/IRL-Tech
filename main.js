@@ -1,8 +1,7 @@
 // Description: This file is used to read and write data to the serial port.
 
 const { SerialPort } = require('serialport'); // Import the serialport module
-
-const { Readline } = require('@serialport/parser-readline'); // Import the parser module
+const { ReadlineParser } = require('@serialport/parser-readline'); // Import the parser module
 
 // List all available ports
 SerialPort.list()
@@ -20,7 +19,7 @@ SerialPort.list()
     });
 
     // Create a new parser instance
-    const parser = port.pipe(new Readline({ delimiter: '\n' }));
+    const parser = port.pipe(new ReadlineParser({ delimiter: '\r\n' }))
 
     // Read the port data
     port.on("open", () => {
