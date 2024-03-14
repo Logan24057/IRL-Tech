@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <!-- Set the title of the webpage -->
+    <title>OpenCV Test</title>
+    <!-- Load OpenCV.js asynchronously and call onOpenCvReady when it's loaded -->
+    <script async src="/scripts/opencv.js" onload="onOpenCvReady()"></script>
+</head>
+
+<body>
+    <!-- Display the number of circles detected -->
+    <p id="circleCount"></p>
+    <!-- Video input element for capturing video from the webcam -->
+    <video id="videoInput" width="640" height="480" autoplay playsinline></video>
+    <!-- Canvas for displaying the video with effects applied -->
+    <canvas id="videoVFX" width="640" height="480"></canvas>
+    <!-- Canvas for displaying the processed video frames -->
+    <canvas id="videoOutput" width="640" height="480"></canvas>
+
+    <script type="text/javascript">
+
+        // Function called when OpenCV.js is ready
+        function onOpenCvReady() {
+            cv.onRuntimeInitialized = function () {
+                // Get the video element
+                let video = document.getElementById("videoInput");
+                // Request access to the webcam
+                navigator.mediaDevices.getUserMedia({ video: true, audio: false })
+                    .then(function (stream) {
+                        // Set the video source to the webcam stream
+                        video.srcObject = stream;
+                        video.play();
+                        // Start processing the video
+                        processing(video);
+                    })
+                    .catch(function (err) {
+                        // Log any errors that occur
+                        console.log("An error occurred! " + err);
+                    });
+            }
+        }
+
+        // Function to apply transformations to a frame
+        function applyTransformations(frame) {
+            // Create new OpenCV.js Mat objects for grayscale, blurred, and edge-detected frames
+            var effects
+            // Convert the frame to grayscale
+            let gray = new cv.Mat();
+            cv.cvtColor(frame, gray, cv.COLOR_RGBA2GRAY);
+            
+            // Apply Gaussian blur to the grayscale frame
+            let blurred = new cv.Mat();
+            cv.GaussianBlur(gray, blurred, new cv.Size(5, 5), 0);
+            
+            // Apply Canny edge detection to the blurred frame
+            // let edges = new cv.Mat();
+            // cv.Canny(blurred, edges, 50, 100, 3, false);
+
+            // The "effects" variable holds the frame with all the effects applied
+            // To add a new effect, apply it to "effects" and update "effects" with the result
+
+            // For example, to apply a threshold effect, you could add these lines:
+            // let thresholded = new cv.Mat();
+            // cv.threshold(edges, thresholded, 128, 255, cv.THRESH_BINARY);
+
+            effects = blurred; // set effects equals to the name of the most recent effect variable 
+
+            // Return the frame with the effects applied
+            return effects;
+        }
+
+        // Function to start processing the video
+        function processing(video) {
+            // Initialize OpenCV.js Mat objects for video frames
+            let src = new cv.Mat(video.height, video.width, cv.CV_8UC4); // Colored video frames
+            let dst = new cv.Mat(video.height, video.width, cv.CV_8UC1); // Grayscale video frames
+            let cap = new cv.VideoCapture(video); // Video capture object
+
+            // Apply transformations to the initial frames
+            let initialFrames = applyTransformations(src);
+
+            // Video processing loop
+            function processVideo() {
+                // Read the current video frame
+                cap.read(src);
+                src.copyTo(dst);
+
+                // Apply transformations to the frame
+                let transformedFrame = applyTransformations(dst);
+
+                // Detect circles in the transformed frame
+                let circles = new cv.Mat();
+                cv.HoughCircles(transformedFrame, circles, cv.HOUGH_GRADIENT, 1, transformedFrame.rows / 8, 100, 30, 0, 0);
+
+                // Draw detected circles on the frame
+                for (let i = 0; i < circles.cols; ++i) {
+                    let x = circles.data32F[i * 3];
+                    let y = circles.data32F[i * 3 + 1];
+                    let radius = circles.data32F[i * 3 + 2];
+                    let center = new cv.Point(x, y);
+                    cv.circle(dst, center, radius, [0, 255, 0, 255]);
+                }
+
+                // Update the UI with the number of circles detected
+                document.getElementById("circleCount").innerText = "Number of circles detected: " + circles.cols;
+
+                // Display the processed video frames
+                cv.imshow("videoVFX", transformedFrame);
+                cv.imshow("videoOutput", dst);
+
+                // Schedule the next frame
+                let delay = 500;
+                setTimeout(processVideo, delay);
+            }
+
+            // Start the video processing loop
+            setTimeout(processVideo, 0);
+        }
+    </script>
+</body>
+
+</html>
