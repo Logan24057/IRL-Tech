@@ -2,6 +2,10 @@
 
 const { SerialPort } = require('serialport'); // Import the serialport module
 const { ReadlineParser } = require('@serialport/parser-readline'); // Import the parser module
+const readline = require('readline').createInterface({
+  input: process.stdin,
+  output: process.stdout
+});
 
 // List all available ports
 SerialPort.list()
@@ -18,25 +22,36 @@ SerialPort.list()
       autoOpen: true,
     });
 
+    let isCommandPrompted = false;
+
     // Create a new parser instance
     const parser = port.pipe(new ReadlineParser({ delimiter: '\r\n' }))
 
-    // Read the port data
+    // Open the port
     port.on("open", () => {
-      console.log('serial port open');
+      console.log('Serial port open');
     });
 
-    // Log the data
+    // Read the port data
     parser.on('data', data => {
-      console.log('got word from arduino:', data);
+      if (data.trim() !== 'Here are some commands that can be used: read, write, erase') {
+        console.log(data);
+      }
+      if (!isCommandPrompted) {
+        setTimeout(() => {
+          readline.question('Commands: \n w/all/yourmessage to write to all records \n w/recordnumber/your message to write to a specific record \n r/all to read all records \n r/recordnumber to read a specific record \n e/all to erase all records \n e/recordnumber to erase a specific record \n', command => {
+            if (command) {
+              var sendMessage = command + '\n'
+              port.write(sendMessage)
+              readline.close();
+            }
+          });
+          isCommandPrompted = true;
+        }, 1000); // Delay of 1 second
+      }
     });
 
-    // Writing to the port
-    port.write('1', (err) => {
-      if (err) {
-        return console.log('Error on write: ', err.message);
-      }
-      console.log('Message written');
-    });
   })
+
+  // Writing to the port
   .catch((err) => console.log(err));
