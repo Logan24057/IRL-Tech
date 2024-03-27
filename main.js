@@ -39,7 +39,7 @@ SerialPort.list()
       }
       if (!isCommandPrompted) {
         setTimeout(() => {
-          readline.question('Commands: \n w0/ \n r0/ \n', command => {
+          readline.question('Commands: \n To write to specific records \n w0/ Your Message \n w1/ Your Message \n w2/ Your Message \n w3/ Your Message \n To read specific records \n r0/  \n r1/ \n r2/ \n r3/ \n', command => {
             if (command) {
               var sendMessage = command + '\n'
               port.write(sendMessage)
