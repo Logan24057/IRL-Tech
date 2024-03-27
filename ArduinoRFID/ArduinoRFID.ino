@@ -9,13 +9,9 @@
 PN532_SPI interface(SPI, 10);            // create a PN532 SPI interface with the SPI CS terminal located at digital pin 10
 NfcAdapter nfc = NfcAdapter(interface);  // create an NFC adapter object
 String tagId = "None";
-<<<<<<< Updated upstream
-NdefMessage message = NdefMessage();     // createa a message object
+NdefMessage message = NdefMessage();     // create a a message object
 int count = message.getRecordCount(); // get the number of records
 int incomingByte = 0; // for incoming serial data
-=======
-NdefMessage message = NdefMessage();  // create a message object
->>>>>>> Stashed changes
 void setup(void) {
   //serial.write and serial.send
   Serial.begin(115200);
@@ -117,7 +113,7 @@ void loop() {
 
   if (Serial.available()) {
     receivedString = Serial.readStringUntil('\n');
-    Serial.print("recieived ");
+    Serial.print("received ");
     Serial.println(receivedString);
     // int receivedStringLength = receivedString.length();
     Serial.println(receivedString.length());
