@@ -9,24 +9,25 @@ PN532_SPI interface(SPI, 10);            // create a PN532 SPI interface with th
 NfcAdapter nfc = NfcAdapter(interface);  // create an NFC adapter object
 String tagId = "None";
 NdefMessage message = NdefMessage();     // createa a message object
-unsigned int count = message.getRecordCount(); // get the number of records
+int count = message.getRecordCount(); // get the number of records
+int incomingByte = 0; // for incoming serial data
 void setup(void) {
   //serial.write and serial.send
   Serial.begin(115200);
   Serial.println("System initialized");
 
-
+  
   nfc.begin();
-  Serial.print("\n");
-  Serial.print("Here are some commands that can be used:");
-  Serial.print("\n");
-  Serial.print("read");
-  Serial.print("\n");
-  Serial.print("write");
-  Serial.print("\n");
-  Serial.print("erase");
-  Serial.print("\n");
-  Serial.print("\n");
+  // Serial.print("\n");
+  // Serial.print("Here are some commands that can be used:");
+  // Serial.print("\n");
+  // Serial.print("read");
+  // Serial.print("\n");
+  // Serial.print("write");
+  // Serial.print("\n");
+  // Serial.print("erase");
+  // Serial.print("\n");
+  // Serial.print("\n");
 }
 
 void loop() {
@@ -57,8 +58,8 @@ void loop() {
       Serial.println(writeString);
 
       message.addTextRecord(writeString);
-      message.addTextRecord(writeString);
-      message.addEmptyRecord();
+      // message.addTextRecord(writeString);
+      // message.addEmptyRecord();
 
       boolean success = nfc.write(message);
       if (success) {
@@ -67,8 +68,28 @@ void loop() {
         Serial.println("Write failed");
       }
     }
+  // send data only when you receive data:
   }
+  String receivedString;
+
+  if (Serial.available()) {
+    receivedString = Serial.readStringUntil('\n');
+    Serial.print("recieived ");
+    Serial.println(receivedString);
+    // int receivedStringLength = receivedString.length();
+    Serial.println(receivedString.length());
+    if (receivedString[0] == 'w' && receivedString[1] == '/'){
+        String command = receivedString.substring(2, 3);
+        Serial.println(command);
+
+    }
+  }
+
+
 }
+
+
+
 
 void readNFC() {
   if (nfc.tagPresent()) {
