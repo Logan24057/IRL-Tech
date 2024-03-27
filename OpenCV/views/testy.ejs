@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,100;0,300;0,400;0,500;0,700;0,900;1,100;1,300;1,400;1,500;1,700;1,900&display=swap"
+        rel="stylesheet">
+    <!-- Set the title of the webpage -->
+    <title>Test Page</title>
+    <!-- Load OpenCV.js asynchronously and call onOpenCvReady() when it's loaded -->
+    <script async src="/scripts/opencv.js" onload="onOpenCvReady()"></script>
+    <style>
+        /* CSS styles */
+        :root {
+            --main-bg-color: #fafafa;
+            --main-text-color: #444;
+        }
+
+        /* Body styles */
+        body {
+            background-color: var(--main-bg-color);
+            font-family: 'Roboto', sans-serif;
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        /* Heading styles */
+        h1 {
+            color: var(--main-text-color);
+            font-size: 2.5em;
+            letter-spacing: 2px;
+            padding: 3m 0;
+            text-align: center;
+            text-transform: uppercase;
+        }
+
+        /* Container styles */
+
+        #circleCountBox {
+            display: block;
+            width: 20%;
+            height: auto;
+            margin: 20px auto;
+            border: 1px solid #5a5757;
+            border-radius: 4px;
+            box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2);
+        }
+        p{
+            text-align: center;
+        }
+        #snapshot {
+            display: block;
+            width: 40%;
+            height: auto;
+            margin: 20px auto;
+            border: 1px solid #5a5757;
+            border-radius: 4px;
+            box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2);
+        }
+
+        #videoInput,
+        #videoVFX,
+        #videoOutput {
+            display: block;
+            width: 10%;
+            height: auto;
+            margin: 0%;
+            border: 1px solid #5a5757;
+            border-radius: 4px;
+            box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2);
+        }
+
+        /* Container alignment */
+        #videoContainer,
+        #buttonContainer {
+            display: flex;
+            justify-content: center;
+            padding: 40px;
+            background-color: #fff;
+            border-radius: 4px;
+            box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2);
+        }
+
+        /* Instruction container styles */
+
+
+        #instructionBox {
+            display: none;
+            justify-content: center;
+            text-align: center;
+        }
+
+        #instructionDropdown {
+            display: block;
+            width: 20%;
+            height: auto;
+            margin: 20px auto;
+            border: 1px solid #5a5757;
+            border-radius: 4px;
+            box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2);
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Page title -->
+    <h1>Test Page</h1>
+
+    <!-- Container for instructions -->
+    <div id="instructionContainer" style="background-color: #f0f0f0; padding: 10px;">
+
+        <p >This is a website that will take screen shots of a camera that can detect circles, this will eventually be
+            used to detect pogs.</p>
+        <!-- Instruction box -->
+        <div id="instructionBox" style="display: none;">
+            <!-- Instruction content goes here -->
+        </div>
+    </div>
+
+    <!-- Container for buttons and circle count -->
+    <div id="buttonContainer">
+        <button id="button1" onclick="takeSnapshot()">Take Snapshot</button>
+        <button id="button2">Refresh Page</button>
+    </div>
+    <div id="circleCountBox"></div>
+
+    <!-- Canvas for displaying snapshot -->
+    <canvas id="snapshot" width="840" height="660"></canvas>
+
+    <!-- Container for video input and output -->
+    <div id="videoContainer">
+        <video id="videoInput" width="320" height="240" autoplay playsinline></video>
+        <canvas id="videoVFX" width="320" height="240"></canvas>
+        <canvas id="videoOutput" width="320" height="240"></canvas>
+    </div>
+
+    <!-- JavaScript code -->
+    <script type="text/javascript">
+        // Function to capture a snapshot
+        function takeSnapshot() {
+            var canvasOutput = document.getElementById('videoOutput'); // get the processed video source
+            var canvasSnapshot = document.getElementById('snapshot');
+            var context = canvasSnapshot.getContext('2d');
+
+            // Draw the processed video frame to the snapshot canvas, scaling it to fill the canvas
+            context.drawImage(canvasOutput, 0, 0, canvasSnapshot.width, canvasSnapshot.height);
+
+            // Get the circle count and update the circleCountBox
+            var circleCount = getCircleCount();
+            document.getElementById("circleCountBox").innerText = "Number of circles detected: " + circleCount;
+        }
+
+        // Function called when OpenCV.js is ready
+        function onOpenCvReady() {
+            cv.onRuntimeInitialized = function () {
+                // Get the video element
+                let video = document.getElementById("videoInput");
+                // Request access to the webcam
+                navigator.mediaDevices.getUserMedia({ video: true, audio: false })
+                    .then(function (stream) {
+                        // Set the video source to the webcam stream
+                        video.srcObject = stream;
+                        video.play();
+                        // Start processing the video
+                        processing(video);
+                    })
+                    .catch(function (err) {
+                        // Log any errors that occur
+                        console.log("An error occurred! " + err);
+                    });
+            }
+        }
+
+        // Function to apply transformations to a frame
+        function applyTransformations(frame) {
+            // Create new OpenCV.js Mat objects for grayscale, blurred, and edge-detected frames
+            var effects;
+
+            // Convert the frame to grayscale
+            let gray = new cv.Mat();
+            cv.cvtColor(frame, gray, cv.COLOR_RGBA2GRAY);
+
+            // Apply Gaussian blur to the grayscale frame
+            let blurred = new cv.Mat();
+            cv.GaussianBlur(gray, blurred, new cv.Size(7, 7), 0);
+
+            // The "effects" variable holds the frame with all the effects applied
+            // To add a new effect, apply it to "effects" and update "effects" with the result
+            effects = blurred;
+
+            // Return the frame with the effects applied
+            return effects;
+        }
+
+        // Function to start processing the video
+        function processing(video) {
+            // Initialize OpenCV.js Mat objects for video frames
+            let src = new cv.Mat(video.height, video.width, cv.CV_8UC4); // Colored video frames
+            let dst = new cv.Mat(video.height, video.width, cv.CV_8UC1); // Grayscale video frames
+            let cap = new cv.VideoCapture(video); // Video capture object
+
+            // Apply transformations to the initial frames
+            let initialFrames = applyTransformations(src);
+
+            // Video processing loop
+            function processVideo() {
+                // Read the current video frame
+                cap.read(src);
+                src.copyTo(dst);
+
+                // Apply transformations to the frame
+                let transformedFrame = applyTransformations(dst);
+
+                // Detect circles in the transformed frame
+                let circles = new cv.Mat();
+                cv.HoughCircles(transformedFrame, circles, cv.HOUGH_GRADIENT, 1, transformedFrame.rows / 8, 100, 30, 0, 0);
+
+                // Draw detected circles on the frame
+                for (let i = 0; i < circles.cols; ++i) {
+                    let x = circles.data32F[i * 3];
+                    let y = circles.data32F[i * 3 + 1];
+                    let radius = circles.data32F[i * 3 + 2];
+                    let center = new cv.Point(x, y);
+                    cv.circle(dst, center, radius, [0, 255, 0, 255]);
+                }
+
+                // Update the UI with the number of circles detected
+                // document.getElementById("circleCount").innerText = "Number of circles detected: " + circles.cols;
+
+                // Display the processed video frames
+                cv.imshow("videoVFX", transformedFrame);
+                cv.imshow("videoOutput", dst);
+
+                // Schedule the next frame
+                let delay = 500;
+                setTimeout(processVideo, delay);
+            }
+
+            // Start the video processing loop
+            setTimeout(processVideo, 0);
+        }
+
+        // Placeholder function to count circles (to be implemented)
+        function getCircleCount() {
+            // This is a placeholder. Replace this with your actual code to count circles.
+            // For example, you might process the image data from your snapshot canvas and use a circle detection algorithm.
+            var circleCount = 0;
+
+            return circleCount;
+        }
+
+        // Function to display instruction box based on selected option
+        function displayInstructionBox(value) {
+            var instructionBox = document.getElementById('instructionBox');
+            if (value === 'instruction1') {
+                instructionBox.style.display = 'block';
+                instructionBox.innerHTML = 'Content for Instruction 1';
+            } else if (value === 'instruction2') {
+                instructionBox.style.display = 'block';
+                instructionBox.innerHTML = 'Content for Instruction 2';
+            } else {
+                instructionBox.style.display = 'none';
+            }
+        }
+        document.getElementById("button2").addEventListener("click", function () {
+            window.location.reload();
+        });
+    </script>
+</body>
+
+</html>
