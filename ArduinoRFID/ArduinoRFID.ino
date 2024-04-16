@@ -9,13 +9,9 @@
 PN532_SPI interface(SPI, 10);            // create a PN532 SPI interface with the SPI CS terminal located at digital pin 10
 NfcAdapter nfc = NfcAdapter(interface);  // create an NFC adapter object
 String tagId = "None";
-<<<<<<< Updated upstream
-NdefMessage message = NdefMessage();     // createa a message object
+NdefMessage message = NdefMessage();     // create a a message object
 int count = message.getRecordCount(); // get the number of records
 int incomingByte = 0; // for incoming serial data
-=======
-NdefMessage message = NdefMessage();  // create a message object
->>>>>>> Stashed changes
 void setup(void) {
   //serial.write and serial.send
   Serial.begin(115200);
@@ -23,16 +19,16 @@ void setup(void) {
 
   
   nfc.begin();
-  Serial.print("\n");
-  Serial.print("Here are some commands that can be used:");
-  Serial.print("\n");
-  Serial.print("read");
-  Serial.print("\n");
-  Serial.print("write");
-  Serial.print("\n");
-  Serial.print("erase");
-  Serial.print("\n");
-  Serial.print("\n");
+  // Serial.print("\n");
+  // Serial.print("Here are some commands that can be used:");
+  // Serial.print("\n");
+  // Serial.print("read");
+  // Serial.print("\n");
+  // Serial.print("write");
+  // Serial.print("\n");
+  // Serial.print("erase");
+  // Serial.print("\n");
+  // Serial.print("\n");
 }
 
 void loop() {
@@ -113,14 +109,22 @@ void loop() {
     }
   // send data only when you receive data:
   }
-  if (Serial.available() > 0) {
-    // read the incoming byte:
-     incomingByte = Serial.read();
+  String receivedString;
 
-    // say what you got:
-    Serial.print("I received: ");
-    Serial.println(incomingByte, HEX); 
+  if (Serial.available()) {
+    receivedString = Serial.readStringUntil('\n');
+    Serial.print("received ");
+    Serial.println(receivedString);
+    // int receivedStringLength = receivedString.length();
+    Serial.println(receivedString.length());
+    if (receivedString[0] == 'w' && receivedString[1] == '/'){
+        String command = receivedString.substring(2, 3);
+        Serial.println(command);
+
+    }
   }
+
+
 }
 
 
