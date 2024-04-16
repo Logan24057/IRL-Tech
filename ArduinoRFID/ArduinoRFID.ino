@@ -18,16 +18,16 @@ void setup(void) {
 
   
   nfc.begin();
-  // Serial.print("\n");
-  // Serial.print("Here are some commands that can be used:");
-  // Serial.print("\n");
-  // Serial.print("read");
-  // Serial.print("\n");
-  // Serial.print("write");
-  // Serial.print("\n");
-  // Serial.print("erase");
-  // Serial.print("\n");
-  // Serial.print("\n");
+  Serial.print("\n");
+  Serial.print("Here are some commands that can be used:");
+  Serial.print("\n");
+  Serial.print("read");
+  Serial.print("\n");
+  Serial.print("write");
+  Serial.print("\n");
+  Serial.print("erase");
+  Serial.print("\n");
+  Serial.print("\n");
 }
 
 void loop() {
@@ -70,22 +70,14 @@ void loop() {
     }
   // send data only when you receive data:
   }
-  String receivedString;
+  if (Serial.available() > 0) {
+    // read the incoming byte:
+     incomingByte = Serial.read();
 
-  if (Serial.available()) {
-    receivedString = Serial.readStringUntil('\n');
-    Serial.print("recieived ");
-    Serial.println(receivedString);
-    // int receivedStringLength = receivedString.length();
-    Serial.println(receivedString.length());
-    if (receivedString[0] == 'w' && receivedString[1] == '/'){
-        String command = receivedString.substring(2, 3);
-        Serial.println(command);
-
-    }
+    // say what you got:
+    Serial.print("I received: ");
+    Serial.println(incomingByte, HEX); 
   }
-
-
 }
 
 
