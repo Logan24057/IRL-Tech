@@ -22,7 +22,7 @@ SerialPort.list()
       autoOpen: true,
     });
 
-    let isCommandPrompted = false;
+    var isCommandPrompted = true;
 
     // Create a new parser instance
     const parser = port.pipe(new ReadlineParser({ delimiter: '\r\n' }))
@@ -37,17 +37,17 @@ SerialPort.list()
       if (data.trim() !== 'Here are some commands that can be used: read, write, erase') {
         console.log(data);
       }
-      if (!isCommandPrompted) {
+      if (isCommandPrompted) {
         setTimeout(() => {
           readline.question('Commands: \n To write to specific records \n w0/ Your Message \n w1/ Your Message \n w2/ Your Message \n w3/ Your Message \n To read specific records \n r0/  \n r1/ \n r2/ \n r3/ \n', command => {
             if (command) {
               var sendMessage = command + '\n'
               port.write(sendMessage)
-              readline.close();
             }
+            readline.close();
+            isCommandPrompted = false;
           });
-          isCommandPrompted = true;
-        }, 1000); // Delay of 1 second
+        }, 500); // Delay of 1 second
       }
     });
 
