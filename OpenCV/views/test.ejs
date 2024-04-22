@@ -59,15 +59,16 @@
 
             // Apply Gaussian blur to the grayscale frame
             let blurred = new cv.Mat();
+
             cv.GaussianBlur(gray, blurred, new cv.Size(5, 5), 0);
 
             // Apply Canny edge detection to the blurred frame
             let edges = new cv.Mat();
             cv.Canny(blurred, edges, 50, 100, 3, false);
-
-
+ 
             // The "effects" variable holds the frame with all the effects applied
             // To add a new effect, apply it to "effects" and update "effects" with the result
+
 
             // For example, to apply a threshold effect, you could add these lines:
             effects = edges; // set effects equals to the name of the most recent effect variable 
