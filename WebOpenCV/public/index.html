@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OpenCV Processing Demo</title>
+</head>
+<body>
+    <h1>OpenCV Processing Demo</h1>
+    <video id="videoInput" width="320" height="240" autoplay playsinline></video>
+    <canvas id="videoOutput" width="320" height="240"></canvas>
+    <button id="takeSnapshotBtn">Take Snapshot</button>
+    <div id="circleCountBox"></div>
+    <script async src="/scripts/opencv.js" onload="onOpenCvReady()"></script>
+
+    <script>
+        document.getElementById('takeSnapshotBtn').addEventListener('click', function() {
+            takeSnapshot();
+        });
+
+        async function takeSnapshot() {
+            const video = document.getElementById('videoInput');
+            const canvasOutput = document.getElementById('videoOutput');
+            const context = canvasOutput.getContext('2d');
+
+            // Draw the video frame to the canvas
+            context.drawImage(video, 0, 0, canvasOutput.width, canvasOutput.height);
+
+            // Get the canvas image data
+            const imageDataURL = canvasOutput.toDataURL('image/jpeg');
+
+            // Send the canvas image data to the server for processing
+            const response = await fetch('/process_video', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ image_data: imageDataURL })
+            });
+
+            const data = await response.json();
+            document.getElementById('circleCountBox').innerText = `Number of circles detected: ${data.circle_count}`;
+        }
+
+        // Setup video stream
+        navigator.mediaDevices.getUserMedia({ video: true })
+            .then(function(stream) {
+                const video = document.getElementById('videoInput');
+                video.srcObject = stream;
+                video.play();
+            })
+            .catch(function(err) {
+                console.error('Error accessing the webcam: ', err);
+            });
+    </script>
+</body>
+</html>
