@@ -56,20 +56,25 @@
             // Convert the frame to grayscale
             let gray = new cv.Mat();
             cv.cvtColor(frame, gray, cv.COLOR_RGBA2GRAY);
-            
+
             // Apply Gaussian blur to the grayscale frame
             let blurred = new cv.Mat();
             cv.GaussianBlur(gray, blurred, new cv.Size(5, 5), 0);
+
+            // Apply Canny edge detection to the blurred frame
+            let edges = new cv.Mat();
+            cv.Canny(blurred, edges, 50, 100, 3, false);
 
 
             // The "effects" variable holds the frame with all the effects applied
             // To add a new effect, apply it to "effects" and update "effects" with the result
 
             // For example, to apply a threshold effect, you could add these lines:
-            effects = blurred; // set effects equals to the name of the most recent effect variable 
+            effects = edges; // set effects equals to the name of the most recent effect variable 
+
             // Delete the Mat objects that are no longer needed (aka all of them not equal to effects)
             gray.delete();
-            // blurred.delete();
+            blurred.delete();
 
             // Return the frame with the effects applied
             return effects;
@@ -89,40 +94,81 @@
                 console.error('An error occurred in processing:', error);
             }
         }
-        // Video processing loop
+
         function processVideo() {
-            // Read the current video frame
             cap.read(src);
             src.copyTo(dst);
-
-            // Apply transformations to the frame
             let transformedFrame = applyTransformations(dst);
-
-            // Detect circles in the transformed frame
             let circles = new cv.Mat();
-            cv.HoughCircles(transformedFrame, circles, cv.HOUGH_GRADIENT, 1, transformedFrame.rows / 16, 120, 50, 10, 130);
+            cv.HoughCircles(transformedFrame, circles, cv.HOUGH_GRADIENT, 1, 45, 120, 30, 30, 100);
 
-            // Draw detected circles on the frame
+            let totalCircles = circles.cols;
+            let numbFaceUp = 0;
+
             for (let i = 0; i < circles.cols; ++i) {
-                let x = circles.data32F[i * 3];
-                let y = circles.data32F[i * 3 + 1];
-                let radius = circles.data32F[i * 3 + 2];
+                let [x, y, radius] = circles.data32F.slice(i * 3, i * 3 + 3);
                 let center = new cv.Point(x, y);
-                cv.circle(dst, center, radius, [0, 255, 0, 255]);
+
+                // Clamp the ROI coordinates to the image boundaries
+                let roiX = Math.max(0, x - radius);
+                let roiY = Math.max(0, y - radius);
+                let roiWidth = Math.min(src.cols - roiX, radius * 2);
+                let roiHeight = Math.min(src.rows - roiY, radius * 2);
+
+                // Create a ROI using the mask
+                let roi = src.roi(new cv.Rect(roiX, roiY, roiWidth, roiHeight));
+
+                // Create a mask for the circle
+                let mask = new cv.Mat.zeros(roi.rows, roi.cols, cv.CV_8UC1);
+                cv.circle(mask, new cv.Point(radius, radius), radius, [255, 255, 255, 255], -1);
+
+                let maskedRoi = new cv.Mat();
+                roi.copyTo(maskedRoi, mask);
+
+                // Apply edge detection on the ROI
+                let edges = new cv.Mat();
+                cv.Canny(maskedRoi, edges, 50, 100);
+
+                // Count the edges
+                let edgeCount = cv.countNonZero(edges);
+
+
+                let minimumEdges = 550;
+                let color = (edgeCount > minimumEdges) ? [255, 0, 0, 255] : [0, 255, 0, 255];
+                cv.circle(dst, center, radius, color, 2);
+
+                if (edgeCount > minimumEdges) {
+                    numbFaceUp++;
+                }
+
+                // testing only delete later
+                if (i === 0) {
+                    let text = "Edges: " + edgeCount;
+                    let fontScale = 1.0;
+                    let thickness = 3; // Thickness for the outline
+                    let color = [0, 0, 0, 255]; // Black color for the outline
+                    cv.putText(dst, text, new cv.Point(x, y), cv.FONT_HERSHEY_SIMPLEX, fontScale, color, thickness, cv.LINE_AA);
+
+                    thickness = 1; // Thickness for the actual text
+                }
+
+                // Delete the new Mats
+                mask.delete();
+                roi.delete();
+                maskedRoi.delete();
+                edges.delete();
             }
 
-            // Update the UI with the number of circles detected
-            document.getElementById("circleCount").innerText = "Number of circles detected: " + circles.cols;
+            // Update the UI with the number of total and face up circles detected
+            document.getElementById("circleCount").innerText = "Number of circles detected: " + totalCircles + " Number face up: " + numbFaceUp;
 
-            // Display the processed video frames
             cv.imshow("videoVFX", transformedFrame);
             cv.imshow("videoOutput", dst);
 
-            // Delete the cv.Mat objects that are no longer needed
             transformedFrame.delete();
             circles.delete();
-            // Schedule the next frame
-            let delay = 500;
+
+            delay = 500
             setTimeout(processVideo, delay);
         }
     </script>
