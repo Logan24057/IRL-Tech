@@ -11,6 +11,7 @@
 <body>
     <!-- Display the number of circles detected -->
     <p id="circleCount"></p>
+
     <!-- Video input element for capturing video from the webcam -->
     <video id="videoInput" width="640" height="480" autoplay playsinline></video>
     <!-- Canvas for displaying the video with effects applied -->
@@ -19,6 +20,10 @@
     <canvas id="videoOutput" width="640" height="480"></canvas>
 
     <script type="text/javascript">
+        var src
+        var dst
+        var cap
+        var background // Declare the background variable
 
         // Function called when OpenCV.js is ready
         function onOpenCvReady() {
@@ -31,7 +36,9 @@
                         // Set the video source to the webcam stream
                         video.srcObject = stream;
                         video.play();
-                        // Start processing the video
+                        // Initialize the background variable as a new cv.Mat object
+                        background = new cv.Mat(video.height, video.width, cv.CV_8UC4);
+                        // Start processing the video  
                         processing(video);
                     })
                     .catch(function (err) {
@@ -44,30 +51,31 @@
         // Function to apply transformations to a frame
         function applyTransformations(frame) {
             // Create new OpenCV.js Mat objects for grayscale, blurred, and edge-detected frames
-            var effects
+            var effects;
+
             // Convert the frame to grayscale
             let gray = new cv.Mat();
             cv.cvtColor(frame, gray, cv.COLOR_RGBA2GRAY);
 
             // Apply Gaussian blur to the grayscale frame
             let blurred = new cv.Mat();
-            cv.GaussianBlur(gray, blurred, new cv.Size(7,7), 0);
+
+            cv.GaussianBlur(gray, blurred, new cv.Size(5, 5), 0);
 
             // Apply Canny edge detection to the blurred frame
-            // let edges = new cv.Mat();
-            // cv.Canny(blurred, edges, 50, 100, 3, false);
-
-            // For example, to apply a threshold effect, you could add these lines:
-            // let thresholded = new cv.Mat();
-            // cv.threshold(blurred, thresholded, 128, 150, cv.THRESH_BINARY);
-            
-
-            
+            let edges = new cv.Mat();
+            cv.Canny(blurred, edges, 50, 100, 3, false);
+ 
             // The "effects" variable holds the frame with all the effects applied
             // To add a new effect, apply it to "effects" and update "effects" with the result
 
 
-            effects = blurred; // set effects equals to the name of the most recent effect variable 
+            // For example, to apply a threshold effect, you could add these lines:
+            effects = edges; // set effects equals to the name of the most recent effect variable 
+
+            // Delete the Mat objects that are no longer needed (aka all of them not equal to effects)
+            gray.delete();
+            blurred.delete();
 
             // Return the frame with the effects applied
             return effects;
@@ -75,52 +83,94 @@
 
         // Function to start processing the video
         function processing(video) {
-            // Initialize OpenCV.js Mat objects for video frames
-            let src = new cv.Mat(video.height, video.width, cv.CV_8UC4); // Colored video frames
-            let dst = new cv.Mat(video.height, video.width, cv.CV_8UC1); // Grayscale video frames
-            let cap = new cv.VideoCapture(video); // Video capture object
+            try {
+                // Initialize OpenCV.js Mat objects for video frames
+                src = new cv.Mat(video.height, video.width, cv.CV_8UC4); // Colored video frames
+                dst = new cv.Mat(video.height, video.width, cv.CV_8UC1); // Grayscale video frames
+                cap = new cv.VideoCapture(video); // Video capture object
 
-            // Apply transformations to the initial frames
-            let initialFrames = applyTransformations(src);
+                // Start the video processing loop
+                setTimeout(processVideo, 0);
+            } catch (error) {
+                console.error('An error occurred in processing:', error);
+            }
+        }
 
-            // Video processing loop
-            function processVideo() {
-                // Read the current video frame
-                cap.read(src);
-                src.copyTo(dst);
+        function processVideo() {
+            cap.read(src);
+            src.copyTo(dst);
+            let transformedFrame = applyTransformations(dst);
+            let circles = new cv.Mat();
+            cv.HoughCircles(transformedFrame, circles, cv.HOUGH_GRADIENT, 1, 45, 120, 30, 30, 100);
 
-                // Apply transformations to the frame
-                let transformedFrame = applyTransformations(dst);
+            let totalCircles = circles.cols;
+            let numbFaceUp = 0;
 
-                // Detect circles in the transformed frame
-                let circles = new cv.Mat();
-                cv.HoughCircles(transformedFrame, circles, cv.HOUGH_GRADIENT, 1, transformedFrame.rows / 8, 100, 30, 0, 0);
+            for (let i = 0; i < circles.cols; ++i) {
+                let [x, y, radius] = circles.data32F.slice(i * 3, i * 3 + 3);
+                let center = new cv.Point(x, y);
 
-                // Draw detected circles on the frame
-                for (let i = 0; i < circles.cols; ++i) {
-                    let x = circles.data32F[i * 3];
-                    let y = circles.data32F[i * 3 + 1];
-                    let radius = circles.data32F[i * 3 + 2];
-                    let center = new cv.Point(x, y);
-                    cv.circle(dst, center, radius, [0, 255, 0, 255]);
+                // Clamp the ROI coordinates to the image boundaries
+                let roiX = Math.max(0, x - radius);
+                let roiY = Math.max(0, y - radius);
+                let roiWidth = Math.min(src.cols - roiX, radius * 2);
+                let roiHeight = Math.min(src.rows - roiY, radius * 2);
+
+                // Create a ROI using the mask
+                let roi = src.roi(new cv.Rect(roiX, roiY, roiWidth, roiHeight));
+
+                // Create a mask for the circle
+                let mask = new cv.Mat.zeros(roi.rows, roi.cols, cv.CV_8UC1);
+                cv.circle(mask, new cv.Point(radius, radius), radius, [255, 255, 255, 255], -1);
+
+                let maskedRoi = new cv.Mat();
+                roi.copyTo(maskedRoi, mask);
+
+                // Apply edge detection on the ROI
+                let edges = new cv.Mat();
+                cv.Canny(maskedRoi, edges, 50, 100);
+
+                // Count the edges
+                let edgeCount = cv.countNonZero(edges);
+
+
+                let minimumEdges = 550;
+                let color = (edgeCount > minimumEdges) ? [255, 0, 0, 255] : [0, 255, 0, 255];
+                cv.circle(dst, center, radius, color, 2);
+
+                if (edgeCount > minimumEdges) {
+                    numbFaceUp++;
                 }
 
-                // Update the UI with the number of circles detected
-                document.getElementById("circleCount").innerText = "Number of circles detected: " + circles.cols;
+                // testing only delete later
+                if (i === 0) {
+                    let text = "Edges: " + edgeCount;
+                    let fontScale = 1.0;
+                    let thickness = 3; // Thickness for the outline
+                    let color = [0, 0, 0, 255]; // Black color for the outline
+                    cv.putText(dst, text, new cv.Point(x, y), cv.FONT_HERSHEY_SIMPLEX, fontScale, color, thickness, cv.LINE_AA);
 
-                // Display the processed video frames
-                cv.imshow("videoVFX", transformedFrame);
-                cv.imshow("videoOutput", dst);
+                    thickness = 1; // Thickness for the actual text
+                }
 
-                // Schedule the next frame
-                let delay = 500;
-                setTimeout(processVideo, delay);
+                // Delete the new Mats
+                mask.delete();
+                roi.delete();
+                maskedRoi.delete();
+                edges.delete();
             }
 
-            // Start the video processing loop
-            setTimeout(processVideo, 0);
+            // Update the UI with the number of total and face up circles detected
+            document.getElementById("circleCount").innerText = "Number of circles detected: " + totalCircles + " Number face up: " + numbFaceUp;
+
+            cv.imshow("videoVFX", transformedFrame);
+            cv.imshow("videoOutput", dst);
+
+            transformedFrame.delete();
+            circles.delete();
+
+            delay = 500
+            setTimeout(processVideo, delay);
         }
     </script>
 </body>
-
-</html>
