@@ -1,11 +1,13 @@
-// Description: This file is used to read and write data to the serial port.
-
+// main.js
 const { SerialPort } = require('serialport'); // Import the serialport module
 const { ReadlineParser } = require('@serialport/parser-readline'); // Import the parser module
 const readline = require('readline').createInterface({
   input: process.stdin,
   output: process.stdout
 });
+const WebSocket = require('ws');
+
+const ws = new WebSocket('ws://localhost:8080');
 
 // List all available ports
 SerialPort.list()
@@ -22,7 +24,7 @@ SerialPort.list()
       autoOpen: true,
     });
 
-    var isCommandPrompted = true;
+    let isCommandPrompted = false;
 
     // Create a new parser instance
     const parser = port.pipe(new ReadlineParser({ delimiter: '\r\n' }))
@@ -37,18 +39,23 @@ SerialPort.list()
       if (data.trim() !== 'Here are some commands that can be used: read, write, erase') {
         console.log(data);
       }
-      if (isCommandPrompted) {
+      if (!isCommandPrompted) {
         setTimeout(() => {
-          readline.question('Commands: \n To write to specific records \n w0/ Your Message \n w1/ Your Message \n w2/ Your Message \n w3/ Your Message \n To read specific records \n r0/  \n r1/ \n r2/ \n r3/ \n', command => {
+          readline.question('Commands: \n To write to specific records \n write \n To read specific records \n r0/  \n r1/ \n r2/ \n r3/ \n', command => {
             if (command) {
               var sendMessage = command + '\n'
               port.write(sendMessage)
+              // readline.close();
             }
-            readline.close();
-            isCommandPrompted = false;
           });
-        }, 500); // Delay of 1 second
+          isCommandPrompted = true;
+        }, 1000); // Delay of 1 second
       }
+    });
+
+    ws.on('message', message => {
+      var sendMessage = message + '\n'
+      port.write(sendMessage)
     });
 
   })
