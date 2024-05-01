@@ -17,16 +17,16 @@ void setup(void) {
 
 
   nfc.begin();
-  Serial.print("\n");
-  Serial.print("Here are some commands that can be used:");
-  Serial.print("\n");
-  Serial.print("read");
-  Serial.print("\n");
-  Serial.print("write");
-  Serial.print("\n");
-  Serial.print("erase");
-  Serial.print("\n");
-  Serial.print("\n");
+  // Serial.print("\n");
+  // Serial.print("Here are some commands that can be used:");
+  // Serial.print("\n");
+  // Serial.print("read");
+  // Serial.print("\n");
+  // Serial.print("write");
+  // Serial.print("\n");
+  // Serial.print("erase");
+  // Serial.print("\n");
+  // Serial.print("\n");
 }
 
 void loop() {

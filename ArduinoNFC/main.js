@@ -5,24 +5,23 @@ const readline = require('readline').createInterface({
   input: process.stdin,
   output: process.stdout
 });
-const WebSocket = require('ws');
 
-const ws = new WebSocket('ws://localhost:8080');
+let port;
+let pendingCommand;
 
-// List all available ports
 SerialPort.list()
   .then((ports) => {
-    ports.forEach((port) => {
-      console.log(port.path);
-      console.log(port)
-    });
-
     // Create a new SerialPort instance
-    const port = new SerialPort({
+    port = new SerialPort({
       path: 'COM4',
       baudRate: 115200,
       autoOpen: true,
     });
+    // If there's a pending command, write it to the port
+    if (pendingCommand) {
+      port.write(pendingCommand + '\n');
+      pendingCommand = null;
+    }
 
     let isCommandPrompted = false;
 
@@ -52,13 +51,36 @@ SerialPort.list()
         }, 1000); // Delay of 1 second
       }
     });
-
-    ws.on('message', message => {
-      var sendMessage = message + '\n'
-      port.write(sendMessage)
-    });
-
   })
-
-  // Writing to the port
   .catch((err) => console.log(err));
+
+  function writeToPort(command, callback) {
+    if (port) {
+        port.write(command + '\n');
+        if (callback && typeof callback === 'function') {
+            port.once('data', callback);
+        }
+    } else {
+        // If the port is not initialized yet, store the command
+        pendingCommand = command;
+    }
+}
+
+function readFromPort(command, callback) {
+  if (port) {
+      let dataChunks = '';
+      port.write(command + '\n');
+      port.on('data', (data) => {
+          dataChunks += data.toString();
+          if (data.toString().endsWith('\n')) {
+              callback(dataChunks);
+              port.removeAllListeners('data'); // remove the listener once we're done
+          }
+      });
+  } else {
+      // If the port is not initialized yet, store the command
+      pendingCommand = command;
+  }
+}
+
+module.exports = { writeToPort, readFromPort };
