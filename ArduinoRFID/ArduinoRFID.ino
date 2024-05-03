@@ -59,17 +59,17 @@ void loop() {
       // find anything after / in the inputString
       String writeString = inputString.substring(inputString.indexOf("/") + 1);
       writeRecord(1, writeString);
-    }else if (inputString[0] == 'w' && inputString[1] == '2' && inputString[2] == '/') {
+    } else if (inputString[0] == 'w' && inputString[1] == '2' && inputString[2] == '/') {
       int customRecordNumber = 0;
       // find anything after / in the inputString
       String writeString = inputString.substring(inputString.indexOf("/") + 1);
       writeRecord(2, writeString);
-    }else if (inputString[0] == 'w' && inputString[1] == '3' && inputString[2] == '/') {
+    } else if (inputString[0] == 'w' && inputString[1] == '3' && inputString[2] == '/') {
       int customRecordNumber = 0;
       // find anything after / in the inputString
       String writeString = inputString.substring(inputString.indexOf("/") + 1);
       writeRecord(3, writeString);
-    }else if (inputString.equals("erase")) {
+    } else if (inputString.equals("erase")) {
       nfc.erase();
     }
     //  else if (inputString.equals("write")) {
@@ -159,7 +159,33 @@ void readRecord(int recordNumber) {
       Serial.print("  Payload (as String): ");
       Serial.println(payloadAsString);
 
-      // id is probably blank and will return ""
+      // Split the payload into wins, losses, and draws
+      int firstCommaIndex = payloadAsString.indexOf(',');
+      int secondCommaIndex = payloadAsString.indexOf(',', firstCommaIndex + 1);
+
+      String removeNonNumeric(String str) {
+        String newStr = "";
+        for (char c : str) {
+          if (isdigit(c)) newStr += c;
+        }
+        return newStr;
+      };
+
+      String winsString = payloadAsString.substring(0, firstCommaIndex);
+      winsString = removeNonNumeric(winsString);
+      String lossesString = payloadAsString.substring(firstCommaIndex + 1, secondCommaIndex);
+      String drawsString = payloadAsString.substring(secondCommaIndex + 1);
+
+      int wins = winsString.toInt();
+      int losses = lossesString.toInt();
+      int draws = drawsString.toInt();
+
+      Serial.print("Wins: ");
+      Serial.println(wins);
+      Serial.print("Losses: ");
+      Serial.println(losses);
+      Serial.print("Draws: ");
+      Serial.println(draws);
 
       String uid = record.getId();
       if (uid == "") {
