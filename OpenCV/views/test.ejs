@@ -59,11 +59,11 @@
 
             // Apply Gaussian blur to the grayscale frame
             let blur = new cv.Mat();
-            cv.GaussianBlur(gray, blur, new cv.Size(13, 13), 0);
+            cv.GaussianBlur(gray, blur, new cv.Size(1, 1), 0);
 
             // Apply Canny edge detection to the blurred frame
             let edges = new cv.Mat();
-            cv.Canny(blur, edges, 50, 100, 5, false);
+            cv.Canny(blur, edges, 1, 100, 5, false);
 
 
             // Apply threshold to further isolate circles
@@ -102,6 +102,7 @@
 
         function processVideo() {
             let numbFaceUp = 0;
+            let numbEnergy = 0;
             cap.read(src);
             src.copyTo(dst);
             let transformedFrame = applyTransformations(dst);
@@ -139,38 +140,45 @@
                 let edgeCount = cv.countNonZero(edges);
 
                 // Define a threshold for the minimum number of edges
-                let minimumEdges = 500; //thunder pog 430 min
+                let minimumEdges = 415;//943-688=255 ( when 11, 11 blur)
+                let energyCount = 870;
 
                 // Set the color based on the edge count: green if above the threshold, red otherwise
                 let color = (edgeCount > minimumEdges) ? [0, 255, 0, 255] : [255, 0, 0, 255];
                 // Draw the circle on the destination image with the determined color
                 cv.circle(dst, center, radius, color, 2);
 
+                // Initialize energyCount
+
                 // If the edge count is above the threshold, increment the face up count
                 if (edgeCount > minimumEdges) {
                     numbFaceUp++;
+
+                    // Check if the pog is an energy pog
+                    if (edgeCount < energyCount) {
+                        numbEnergy++
+                    }
                 }
 
                 // For testing purposes only
                 // If it's the first iteration, display the edge count on the image
-                // if (i === 0) {
-                //     let text = "Edges: " + edgeCount;
-                //     let fontScale = 1.0;
-                //     let thickness = 3; // Thickness for the outline
-                //     let color = [0, 0, 0, 255]; // Black color for the outline
-                //     cv.putText(dst, text, new cv.Point(x, y), cv.FONT_HERSHEY_SIMPLEX, fontScale, color, thickness, cv.LINE_AA);
-                //     // thickness = 1; // Thickness for the actual text
-                // }
+                if (i === 0) {
+                    let text = "Edges: " + edgeCount;
+                    let fontScale = 1.0;
+                    let thickness = 3; // Thickness for the outline
+                    let color = [0, 0, 0, 255]; // Black color for the outline
+                    cv.putText(dst, text, new cv.Point(x, y), cv.FONT_HERSHEY_SIMPLEX, fontScale, color, thickness, cv.LINE_AA);
 
-                // Delete the new Mats
-                mask.delete();
-                roi.delete();
-                maskedRoi.delete();
-                edges.delete();
+                    // Delete the new Mats
+                    mask.delete();
+                    roi.delete();
+                    maskedRoi.delete();
+                    edges.delete();
+                }
             }
 
             // Update the UI with the number of total and face up circles detected
-            document.getElementById("circleCount").innerText = "Number of circles detected: " + totalCircles + " Number face up: " + numbFaceUp;
+            document.getElementById("circleCount").innerText = "Number of circles detected: " + totalCircles + " Number face up: " + numbFaceUp + " Number of energy pogs: " + numbEnergy;
 
             cv.imshow("videoVFX", transformedFrame);
             cv.imshow("videoOutput", dst);
@@ -178,7 +186,7 @@
             transformedFrame.delete();
             circles.delete();
 
-            delay = 500
+            delay = 250
             setTimeout(processVideo, delay);
         }
     </script>
