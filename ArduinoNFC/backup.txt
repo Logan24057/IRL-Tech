@@ -1,0 +1,33 @@
+const express = require('express');
+const bodyParser = require('body-parser');
+const { SerialPort } = require('serialport');
+const { ReadlineParser } = require('@serialport/parser-readline');
+
+const app = express();
+app.use(bodyParser.urlencoded({ extended: true }));
+
+// Handle POST requests to /write
+app.post('/write', (req, res) => {
+  const message = req.body.write; // Get the message from the request body
+
+  // Your existing code to write to the serial port can go here
+  // For example:
+  const port = new SerialPort({
+    path: 'COM4',
+    baudRate: 115200,
+    autoOpen: true,
+  });
+
+  const parser = port.pipe(new ReadlineParser({ delimiter: '\r\n' }));
+
+  port.on("open", () => {
+    console.log('Serial port open');
+    port.write(message + '\n');
+  });
+
+  res.end('Message sent');
+});
+
+app.listen(3000, () => {
+  console.log('Server running at http://127.0.0.1:3000/');
+});

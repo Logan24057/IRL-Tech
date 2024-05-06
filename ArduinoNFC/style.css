@@ -1,0 +1,83 @@
+/* Style the body element */
+body {
+    display: flex; /* Use flexbox for layout */
+    justify-content: center; /* Center content horizontally */
+    align-items: center; /* Center content vertically */
+    height: 100vh; /* Make the body fill the viewport */
+    margin: 0; /* Remove default margin */
+    padding: 0; /* Remove default padding */
+    background-color: #75aad6; /* Set the background color */
+    font-family: Arial, sans-serif; /* Use Arial or a sans-serif font */
+}
+
+/* Style the #content element */
+#content {
+    display: flex; /* Use flexbox for layout */
+    flex-direction: column; /* Stack the children vertically */
+    justify-content: center; /* Center content vertically */
+    align-items: center; /* Center content horizontally */
+    width: 65%; /* Set the width */
+    height: 80%; /* Set the height */
+    margin: 20px auto; /* Add margin to the top and bottom, and auto margin to the sides */
+    padding: 20px; /* Add padding */
+    background-color: #fff; /* Set the background color */
+    box-shadow: 0px 0px 10px rgba(0,0,0,0.1); /* Add a box shadow */
+    border-radius: 150px; /* Round the corners */
+}
+
+/* Style the #writeForm and #readContainer elements */
+#writeForm, #readContainer {
+    display: flex; /* Use flexbox for layout */
+    flex-direction: column; /* Stack the children vertically */
+    justify-content: center; /* Center content vertically */
+    align-items: center; /* Center content horizontally */
+    width: 50%; /* Set the width */
+    margin-bottom: 20px; /* Add margin to the bottom */
+}
+
+/* Style the #readContent element */
+#readContent {
+    width: 750px; /* Set the width */
+    height: 300px; /* Set the height */
+    overflow-y: auto; /* Add a vertical scrollbar if necessary */
+    border: 1px solid #3599aa; /* Add a border */
+    padding: 20px; /* Add padding */
+    border-radius: 125px; /* Round the corners */
+    text-align: center; /* Center the text */
+}
+
+/* Hide the scrollbar for Chrome, Safari and Opera */
+#readContent::-webkit-scrollbar {
+    display: none; /* Hide the scrollbar */
+}
+
+/* Hide the scrollbar for Firefox */
+#readContent {
+    scrollbar-width: none; /* Firefox */
+    -ms-overflow-style: none;  /* Internet Explorer 10+ */
+}
+
+/* Style the form elements */
+form {
+    padding: 20px; /* Add padding */
+}
+
+/* Style the input elements */
+input {
+    border: 1px solid #3599aa; /* Add a border */
+    border-radius: 150px; /* Round the corners */
+}
+
+/* Style the button elements */
+button {
+    background-color: #3599aa; /* Set the background color */
+    color: rgb(0, 0, 0); /* Set the text color */
+    padding: 10px 22px; /* Add padding */
+    text-align: center; /* Center the text */
+    text-decoration: none; /* Remove the underline */
+    display: inline-block; /* Make the button inline-block */
+    font-size: 16px; /* Set the font size */
+    margin: 4px 2px; /* Add margin */
+    cursor: pointer; /* Change the cursor when hovering */
+    border-radius: 150px; /* Round the corners */
+}
