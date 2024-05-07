@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <!-- Set the character encoding for the document -->
+    <meta charset="UTF-8">
+    <!-- Set the viewport to scale to the device width -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- Set the title of the document -->
+    <title>NFC Read/Writer</title>
+    <!-- Link to the external CSS file -->
+    <link rel="stylesheet" type="text/css" href="style.css">
+</head>
+
+<body>
+    <!-- This div contains all the forms -->
+    <div id="content">
+        <!-- This div contains the write form -->
+        <div id="writeFormContainer">
+            <!-- This form sends a POST request when submitted -->
+            <form id="writeForm" action="http://127.0.0.1:5500/write" method="post">
+                <!-- This input field is for the "write" data -->
+                <input type="text" name="write" id="write">
+                <!-- This button submits the form -->
+                <button type="submit">Write</button>
+                <script>
+                    // Add an event listener for the submit event on the write form
+                    document.getElementById('writeForm').addEventListener('submit', function (event) {
+                        // Prevent the default form submission
+                        event.preventDefault();
+                        // Get the value of the write input field
+                        let writeValue = document.getElementById('write').value;
+                        // Send a POST request to the '/write' endpoint with the write data
+                        fetch('http://127.0.0.1:5500/write', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                            },
+                            body: JSON.stringify({ write: writeValue }),
+                        });
+                    });
+                </script>
+            </form>
+            <!-- This div contains the read form and the display area -->
+            <div id="readContainer">
+                <!-- This div contains the read form -->
+                <form id="readForm" action="" method="get">
+                    <!-- This input field is for the "read" data -->
+                    <input type="text" name="read" id="read">
+                    <!-- This button submits the form -->
+                    <button type="submit">Read</button>
+                </form>
+                <script>
+                    // Add an event listener for the submit event on the read form
+                    document.getElementById('readForm').addEventListener('submit', function (event) {
+                        // Prevent the default form submission
+                        event.preventDefault();
+                        // Get the value of the read input field
+                        let readValue = document.getElementById('read').value;
+                        // Send a GET request to the '/read' endpoint with the read command
+                        fetch('http://127.0.0.1:5500/read?command=' + readValue)
+                            .then(response => response.json())
+                            .then(data => {
+                                // Display the read data in the readContent div
+                                document.getElementById('readContent').textContent = data.read;
+                            });
+                    });
+                </script>
+                <!-- This div is where the read data will be displayed -->
+                <div id="readContent">
+
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+
+</html>
