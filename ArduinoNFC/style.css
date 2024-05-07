@@ -26,7 +26,7 @@ body {
 }
 
 /* Style the #writeForm and #readContainer elements */
-#writeForm, #readContainer {
+#writeFormContainer, #readContainer {
     display: flex; /* Use flexbox for layout */
     flex-direction: column; /* Stack the children vertically */
     justify-content: center; /* Center content vertically */
@@ -42,7 +42,7 @@ body {
     overflow-y: auto; /* Add a vertical scrollbar if necessary */
     border: 1px solid #3599aa; /* Add a border */
     padding: 20px; /* Add padding */
-    border-radius: 125px; /* Round the corners */
+    border-radius: 25px; /* Round the corners */
     text-align: center; /* Center the text */
 }
 

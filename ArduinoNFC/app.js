@@ -1,70 +1,83 @@
-// app.js
-const main = require('./main');
 const http = require('http');
 const url = require('url');
-const WebSocket = require('ws');
-
-let dataArray = [];
-
-const wss = new WebSocket.Server({ port: 8080 });
-let wsClient;
-
-wss.on('connection', ws => {
-  wsClient = ws;
-});
+const fs = require('fs');
+const path = require('path');
+const main = require('./main');
 
 const server = http.createServer((req, res) => {
-  const reqUrl = url.parse(req.url, true);
-  const userAgent = req.headers['user-agent'];
+    const reqUrl = url.parse(req.url, true);
 
-  if (!(/Chrome|Firefox|Safari|Opera/.test(userAgent)) || /Edg/.test(userAgent)) {
-    res.writeHead(403, { 'Content-Type': 'text/plain' });
-    res.end(`
-    <h1>Your browser is not supported</h1>
-    <p>Please use a supported browser to view this site. We recommend <a href="https://www.google.com/chrome/">Google Chrome</a>, <a href="https://www.mozilla.org/firefox/">Mozilla Firefox</a>, <a href="https://www.apple.com/safari/">Apple Safari</a>, or <a href="https://www.opera.com/">Opera</a>.</p>
-`);
-    return;
-  }
-
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-
-  if (req.method === 'OPTIONS') {
-    res.writeHead(200);
-    res.end();
-    return;
-  }
-
-  if (reqUrl.pathname === '/read' && req.method === 'GET') {
-    res.writeHead(200, { 'Content-Type': 'application/json' });
-    res.end(JSON.stringify(dataArray));
-  } else if (reqUrl.pathname === '/write' && req.method === 'POST') {
-    let body = '';
-    req.on('data', (chunk) => {
-      body += chunk;
-    });
-    req.on('end', () => {
-      let postData = JSON.parse(body);
-      dataArray.push(postData.write);
-      if (wsClient) {
-        wsClient.send(postData.write);
-      }
-      res.writeHead(200, { 'Content-Type': 'text/plain' });
-      res.end(`Data saved: ${postData.write}`);
-    });
-  } else {
-    res.writeHead(405, { 'Content-Type': 'text/plain' });
-    res.end('Method Not Allowed');
-  }
+    if (reqUrl.pathname === '/write' && req.method === 'POST') {
+        let body = '';
+        req.on('data', (chunk) => {
+            body += chunk;
+        });
+        req.on('end', () => {
+            let postData = JSON.parse(body);
+            // Write the "write" command to the serial port
+            main.writeToPort('write', () => {
+                // After the "write" command has been written, write the actual command
+                main.writeToPort(postData.write);
+                res.writeHead(200, { 'Content-Type': 'text/plain' });
+                res.end(`Command sent: ${postData.write}`);
+            });
+        });
+    }
+ 
+    else if (reqUrl.pathname === '/read' && req.method === 'GET') {
+        let command = reqUrl.query.command;
+        main.readFromPort(command, (data) => {
+            res.writeHead(200, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ read: data }));
+        });
+    }
+    else if (req.method === 'GET') {
+        let filePath = '.' + req.url;
+        if (filePath == './')
+            filePath = './index.html';
+    
+        let extname = String(path.extname(filePath)).toLowerCase();
+        let mimeTypes = {
+            '.html': 'text/html',
+            '.js': 'text/javascript',
+            '.css': 'text/css',
+            '.json': 'application/json',
+            '.png': 'image/png',
+            '.jpg': 'image/jpg',
+            '.gif': 'image/gif',
+            '.svg': 'image/svg+xml',
+            '.wav': 'audio/wav',
+            '.mp4': 'video/mp4',
+            '.woff': 'application/font-woff',
+            '.ttf': 'application/font-ttf',
+            '.eot': 'application/vnd.ms-fontobject',
+            '.otf': 'application/font-otf',
+            '.wasm': 'application/wasm'
+        };
+    
+        let contentType = mimeTypes[extname] || 'application/octet-stream';
+    
+        fs.readFile(filePath, function(error, content) {
+            if (error) {
+                if(error.code == 'ENOENT') {
+                    fs.readFile('./404.html', function(error, content) {
+                        res.writeHead(404, { 'Content-Type': 'text/html' });
+                        res.end(content, 'utf-8');
+                    });
+                }
+                else {
+                    res.writeHead(500);
+                    res.end('Sorry, check with the site admin for error: '+error.code+' ..\n');
+                }
+            }
+            else {
+                res.writeHead(200, { 'Content-Type': contentType });
+                res.end(content, 'utf-8');
+            }
+        });
+    }
 });
 
-server.on('error', (err) => {
-  console.error('Server error:', err.message);
-});
-
-const port = 3000;
-
-server.listen(port, () => {
-  console.log(`Server is running on port ${port}`);
+server.listen(5500, () => {
+    console.log('Server is running at http://127.0.0.1:5500');
 });

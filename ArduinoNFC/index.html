@@ -8,87 +8,52 @@
     <!-- Link to the external CSS file -->
     <link rel="stylesheet" type="text/css" href="style.css">
     <!-- Link to the external JavaScript file -->
-    <script src="app.js"></script>
-    <script>
-        // This function will run when the page loads
-        window.onload = function () {
-            // Add an event listener for the submit event on the form with id 'readForm'
-            document.getElementById('readForm').addEventListener('submit', function (event) {
-                // Prevent the form from being submitted in the default way
-                event.preventDefault();
-
-                // Send a GET request to the server
-                fetch('http://127.0.0.1:3000/read')
-                    .then(response => response.json()) // Parse the response as JSON
-                    .then(data => {
-                        // Clear the content of the 'readContent' div
-                        document.getElementById('readContent').textContent = '';
-
-                        // Loop through each item in the data array
-                        data.forEach(item => {
-                            // Create a new paragraph element
-                            let p = document.createElement('p');
-
-                            // Set the text of the paragraph to the current item
-                            p.textContent = item;
-
-                            // Add the paragraph to the 'readContent' div
-                            document.getElementById('readContent').appendChild(p);
-                        });
-                    });
-            });
-
-            // Add an event listener for the submit event on the form with id 'writeForm'
-            document.getElementById('writeForm').addEventListener('submit', function (event) {
-                // Prevent the form from being submitted in the default way
-                event.preventDefault();
-
-                // Get the value of the input field with id 'write'
-                let writeInput = document.getElementById('write').value;
-
-                // Send a POST request to the server
-                fetch('http://127.0.0.1:3000/write', {
-                    method: 'POST', // Specify the method
-                    headers: {
-                        'Content-Type': 'application/json', // Set the content type of the request
-                    },
-                    body: JSON.stringify({ write: writeInput }), // Convert the input to a JSON string
-                })
-                    .then(response => response.text()) // Parse the response as text
-                    .then(data => {
-                        console.log('Success:', data); // Log the response
-                    })
-                    .catch((error) => {
-                        console.error('Error:', error); // Log any errors
-                    });
-            });
-        }
-    </script>
+    
 </head>
 
 <body>
     <!-- This div contains all the forms -->
     <div id="content">
         <!-- This div contains the write form -->
-        <div id="writeForm">
+        <div id="writeFormContainer">
             <!-- This form sends a POST request when submitted -->
-            <form action="http://127.0.0.1:3000/write" method="post">
+            <form id="writeForm" action="http://127.0.0.1:5500/write" method="post">
                 <!-- This input field is for the "write" data -->
                 <input type="text" name="write" id="write">
                 <!-- This button submits the form -->
                 <button type="submit">Write</button>
+                <script>
+                    document.getElementById('writeForm').addEventListener('submit', function (event) {
+                        event.preventDefault();
+                        let writeValue = document.getElementById('write').value;
+                        fetch('http://127.0.0.1:5500/write', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                            },
+                            body: JSON.stringify({ write: writeValue }),
+                        });
+                    });
+                </script>
             </form>
             <!-- This div contains the read form and the display area -->
             <div id="readContainer">
                 <!-- This div contains the read form -->
-                <div id="readForm">
-                    <!-- This form sends a GET request when submitted -->
-                    <form action="" method="get">
-                        <!-- This input field is for the "read" data -->
-                        <input type="text" name="read" id="read">
-                        <!-- This button submits the form -->
-                        <button type="submit">Read</button>
-                    </form>
+                <form id="readForm" action="" method="get">
+                    <input type="text" name="read" id="read">
+                    <button type="submit">Read</button>
+                </form>
+                <script>
+                    document.getElementById('readForm').addEventListener('submit', function (event) {
+                        event.preventDefault();
+                        let readValue = document.getElementById('read').value;
+                        fetch('http://127.0.0.1:5500/read?command=' + readValue)
+                            .then(response => response.json())
+                            .then(data => {
+                                document.getElementById('readContent').textContent = data.read;
+                            });
+                    });
+                </script>
                 </div>
                 <!-- This div is where the read data will be displayed -->
                 <div id="readContent">
