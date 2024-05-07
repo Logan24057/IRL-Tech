@@ -101,23 +101,51 @@
         }
 
         function processVideo() {
+            // Initialize the number of face up and energy to 0
             let numbFaceUp = 0;
             let numbEnergy = 0;
+
+            // Read the source from the capture
             cap.read(src);
+
+            // Copy the source to the destination
             src.copyTo(dst);
+
+            // Apply transformations to the destination and store the result
             let transformedFrame = applyTransformations(dst);
+
+            // Initialize a new matrix for circles
             let circles = new cv.Mat();
+
+            // Detect circles in the image using the Hough transform
             cv.HoughCircles(transformedFrame, circles, cv.HOUGH_GRADIENT, 1, 50, 1, 20, 30, 36);
+
+            // Get the total number of detected circles
             let totalCircles = circles.cols;
 
+            // Loop through each detected circle
             for (let i = 0; i < circles.cols; ++i) {
+                // Get the x, y coordinates and radius of the circle
                 let [x, y, radius] = circles.data32F.slice(i * 3, i * 3 + 3);
+
+                // Create a new point with the x, y coordinates
                 let center = new cv.Point(x, y);
 
                 // Define the region of interest (ROI) around the circle
+                // Calculate the x-coordinate of the region of interest (ROI)
+                // Ensure it's not less than 0
                 let roiX = Math.max(0, x - radius);
+
+                // Calculate the y-coordinate of the ROI
+                // Ensure it's not less than 0
                 let roiY = Math.max(0, y - radius);
+
+                // Calculate the width of the ROI
+                // Ensure it's not greater than the width of the source image
                 let roiWidth = Math.min(src.cols - roiX, radius * 2);
+
+                // Calculate the height of the ROI
+                // Ensure it's not greater than the height of the source image
                 let roiHeight = Math.min(src.rows - roiY, radius * 2);
 
                 // Create a ROI using the mask on the source image
@@ -140,8 +168,7 @@
                 let edgeCount = cv.countNonZero(edges);
 
                 // Define a threshold for the minimum number of edges
-                let minimumEdges = 415;//943-688=255 ( when 11, 11 blur)
-                let energyCount = 870;
+                let minimumEdges = 415;
 
                 // Set the color based on the edge count: green if above the threshold, red otherwise
                 let color = (edgeCount > minimumEdges) ? [0, 255, 0, 255] : [255, 0, 0, 255];
@@ -153,40 +180,53 @@
                 // If the edge count is above the threshold, increment the face up count
                 if (edgeCount > minimumEdges) {
                     numbFaceUp++;
-
-                    // Check if the pog is an energy pog
-                    if (edgeCount < energyCount) {
-                        numbEnergy++
-                    }
                 }
 
-                // For testing purposes only
+                // For testing purposes only, comment in full versions
                 // If it's the first iteration, display the edge count on the image
                 if (i === 0) {
+                    // Initialize the text to be displayed, showing the edge count
                     let text = "Edges: " + edgeCount;
-                    let fontScale = 1.0;
-                    let thickness = 3; // Thickness for the outline
-                    let color = [0, 0, 0, 255]; // Black color for the outline
-                    cv.putText(dst, text, new cv.Point(x, y), cv.FONT_HERSHEY_SIMPLEX, fontScale, color, thickness, cv.LINE_AA);
 
-                    // Delete the new Mats
-                    mask.delete();
-                    roi.delete();
-                    maskedRoi.delete();
-                    edges.delete();
+                    // Set the scale for the font
+                    let fontScale = 1.0;
+
+                    // Set the thickness for the outline of the text
+                    let thickness = 3;
+
+                    // Set the color for the outline of the text (in this case, black)
+                    let color = [0, 0, 0, 255];
+
+                    // Use OpenCV's putText function to draw the text on the image
+                    // The text is placed at the point (x, y) with the specified font, scale, color, and thickness
+                    // cv.LINE_AA is used for anti-aliasing, making the text smoother
+                    cv.putText(dst, text, new cv.Point(x, y), cv.FONT_HERSHEY_SIMPLEX, fontScale, color, thickness, cv.LINE_AA);
                 }
+                // Delete the new Mats
+                mask.delete();
+                roi.delete();
+                maskedRoi.delete();
+                edges.delete();
             }
 
             // Update the UI with the number of total and face up circles detected
+            // Get the HTML element with the id "circleCount" and set its innerText to display the number of circles detected, the number of face up circles, and the number of energy pogs
             document.getElementById("circleCount").innerText = "Number of circles detected: " + totalCircles + " Number face up: " + numbFaceUp + " Number of energy pogs: " + numbEnergy;
 
+            // Display the transformedFrame image in the HTML element with the id "videoVFX"
             cv.imshow("videoVFX", transformedFrame);
+
+            // Display the dst image in the HTML element with the id "videoOutput"
             cv.imshow("videoOutput", dst);
 
+            // Delete the transformedFrame and circles objects to free up memory
             transformedFrame.delete();
             circles.delete();
 
+            // Set the delay between video processing iterations to 250 milliseconds
             delay = 250
+
+            // Call the processVideo function after the specified delay
             setTimeout(processVideo, delay);
         }
     </script>
