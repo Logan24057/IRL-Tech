@@ -32,7 +32,6 @@ void setup(void) {
 void loop() {
 
   while (Serial.available() > 0) {
-    String nfcTagRecord[4];
     String inputString = Serial.readStringUntil('\n');  // Read the incoming data as a string
     inputString.trim();                                 // Remove leading and trailing whitespaces
     if (inputString.equals("read")) {
@@ -47,34 +46,51 @@ void loop() {
     } else if (inputString[0] == 'r' && inputString[1] == '2') {
       int customRecordNumber = 2;
       readRecord(customRecordNumber);
-    }else if (inputString[0] == 'r' && inputString[1] == '3') {
+    } else if (inputString[0] == 'r' && inputString[1] == '3') {
       int customRecordNumber = 3;
       readRecord(customRecordNumber);
+    } else if (inputString[0] == 'w' && inputString[1] == '0' && inputString[2] == '/') {
+      int customRecordNumber = 0;
+      // find anything after / in the inputString
+      String writeString = inputString.substring(inputString.indexOf("/") + 1);
+      writeRecord(0, writeString);
+    } else if (inputString[0] == 'w' && inputString[1] == '1' && inputString[2] == '/') {
+      int customRecordNumber = 0;
+      // find anything after / in the inputString
+      String writeString = inputString.substring(inputString.indexOf("/") + 1);
+      writeRecord(1, writeString);
+    } else if (inputString[0] == 'w' && inputString[1] == '2' && inputString[2] == '/') {
+      int customRecordNumber = 0;
+      // find anything after / in the inputString
+      String writeString = inputString.substring(inputString.indexOf("/") + 1);
+      writeRecord(2, writeString);
+    } else if (inputString[0] == 'w' && inputString[1] == '3' && inputString[2] == '/') {
+      int customRecordNumber = 0;
+      // find anything after / in the inputString
+      String writeString = inputString.substring(inputString.indexOf("/") + 1);
+      writeRecord(3, writeString);
     } else if (inputString.equals("erase")) {
       nfc.erase();
-    } else if (inputString.equals("write")) {
-      Serial.print("\n");
-      Serial.println("What would you like to write?");
-
-      while (!Serial.available()) {
-        // Wait for user input
-      };
-
-      String writeString = Serial.readString();  // Read the incoming data as a string
-      writeString.trim();                        // Remove leading and trailing whitespaces
-
-      Serial.println(writeString);
-
-      message.addTextRecord(writeString);
-   
-
-      boolean success = nfc.write(message);
-      if (success) {
-        Serial.println("Success. Try reading this tag with your phone.");
-      } else {
-        Serial.println("Write failed");
-      }
     }
+    //  else if (inputString.equals("write")) {
+    //   Serial.print("\n");
+
+
+    //   String writeString = Serial.readString();  // Read the incoming data as a string
+    //   writeString.trim();                        // Remove leading and trailing whitespaces
+
+    //   Serial.println(writeString);
+
+    //   message.addTextRecord(writeString);
+
+
+    //   boolean success = nfc.write(message);
+    //   if (success) {
+    //     Serial.println("Success. Try reading this tag with your phone.");
+    //   } else {
+    //     Serial.println("Write failed");
+    //   }
+    // }
   }
 }
 
@@ -143,7 +159,33 @@ void readRecord(int recordNumber) {
       Serial.print("  Payload (as String): ");
       Serial.println(payloadAsString);
 
-      // id is probably blank and will return ""
+      // Split the payload into wins, losses, and draws
+      int firstCommaIndex = payloadAsString.indexOf(',');
+      int secondCommaIndex = payloadAsString.indexOf(',', firstCommaIndex + 1);
+
+      String removeNonNumeric(String str) {
+        String newStr = "";
+        for (char c : str) {
+          if (isdigit(c)) newStr += c;
+        }
+        return newStr;
+      };
+
+      String winsString = payloadAsString.substring(0, firstCommaIndex);
+      winsString = removeNonNumeric(winsString);
+      String lossesString = payloadAsString.substring(firstCommaIndex + 1, secondCommaIndex);
+      String drawsString = payloadAsString.substring(secondCommaIndex + 1);
+
+      int wins = winsString.toInt();
+      int losses = lossesString.toInt();
+      int draws = drawsString.toInt();
+
+      Serial.print("Wins: ");
+      Serial.println(wins);
+      Serial.print("Losses: ");
+      Serial.println(losses);
+      Serial.print("Draws: ");
+      Serial.println(draws);
 
       String uid = record.getId();
       if (uid == "") {
@@ -153,6 +195,52 @@ void readRecord(int recordNumber) {
         Serial.println(uid);
       }
       // }
+    }
+  }
+  delay(3000);
+}
+
+void writeRecord(int recordNumber, String payload) {
+  if (nfc.tagPresent()) {
+    NfcTag tag = nfc.read();
+    Serial.println(tag.getTagType());
+    Serial.print("UID: ");
+    Serial.println(tag.getUidString());
+
+    if (tag.hasNdefMessage())  // every tag won't have a message
+    {
+      NdefMessage message = tag.getNdefMessage();
+
+      // Create a new NDEF message
+      NdefMessage newMessage = NdefMessage();
+
+      // Add all existing records to the new message up to the one being edited
+      int recordCount = message.getRecordCount();
+      for (int i = 0; i < recordCount; i++) {
+        NdefRecord record = message.getRecord(i);
+        if (i == recordNumber) {
+          // Add your new record
+          newMessage.addTextRecord(payload);
+        } else {
+          newMessage.addRecord(record);
+        }
+      }
+
+      // If the record number is greater than the existing record count, add the new record at the end
+      if (recordNumber >= recordCount) {
+        newMessage.addTextRecord(payload);
+      }
+
+      // Erase the tag
+      nfc.erase();
+
+      // Write the new message to the tag
+      boolean success = nfc.write(newMessage);
+      if (success) {
+        Serial.println("Success. Try reading this tag with your phone.");
+      } else {
+        Serial.println("Write failed");
+      }
     }
   }
   delay(3000);

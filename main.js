@@ -1,5 +1,6 @@
 // Description: This file is used to read and write data to the serial port.
 
+//Sets the requirements for the application
 const { SerialPort } = require('serialport'); // Import the serialport module
 const { ReadlineParser } = require('@serialport/parser-readline'); // Import the parser module
 const readline = require('readline').createInterface({
@@ -22,6 +23,7 @@ SerialPort.list()
       autoOpen: true,
     });
 
+    //Initaites prompt loop
     var isCommandPrompted = true;
 
     // Create a new parser instance
@@ -39,12 +41,14 @@ SerialPort.list()
       }
       if (isCommandPrompted) {
         setTimeout(() => {
+          //Asks for the command you want to use
           readline.question('Commands: \n To write to specific records \n w0/ Your Message \n w1/ Your Message \n w2/ Your Message \n w3/ Your Message \n To read specific records \n r0/  \n r1/ \n r2/ \n r3/ \n', command => {
             if (command) {
               var sendMessage = command + '\n'
               port.write(sendMessage)
             }
             readline.close();
+            //Closes prompt loop
             isCommandPrompted = false;
           });
         }, 500); // Delay of 1 second
